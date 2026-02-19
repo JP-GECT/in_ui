@@ -39,11 +39,6 @@ function formatPolicyId(policyId: string): string {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-interface User {
-  user_id?: string;
-  id?: string;
-  [key: string]: unknown;
-}
 
 interface HeroProps {
   username: string;

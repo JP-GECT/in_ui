@@ -10,8 +10,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Demo credentials - replace with real auth/API in production
-const DEMO_USERNAME = 'admin';
+
 const DEMO_PASSWORD = 'admin123';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
