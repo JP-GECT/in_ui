@@ -50,19 +50,13 @@ interface HeroProps {
 }
 
 export default function Hero({ username }: HeroProps) {
-  const [user, setUser] = useState<User | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const userRes = await fetch(`${API_BASE_URL}/user/${username}`);
-      const userData = await userRes.json();
-      const fetchedUser = userData.user ?? userData;
-      setUser(fetchedUser);
 
-      const userId = fetchedUser?.user_id ?? fetchedUser?.id;
       const res = await fetch(`${API_BASE_URL}/recommend-policy/${username}`, { method: 'POST' });
       const data = await res.json();
       const parsed: PolicyRecommendation[] = JSON.parse(data.recommendation.content);
