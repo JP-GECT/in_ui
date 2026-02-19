@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Shield, Calendar, HandCoins, CircleDollarSign } from 'lucide-react';
 
+interface PolicyRecommendation {
+  policy_id: string;
+  reason: string;
+  source: string;
+}
+
 interface CarouselSlide {
   id: number;
   title: string;
@@ -11,74 +17,77 @@ interface CarouselSlide {
   disclaimer: string;
 }
 
-const slides: CarouselSlide[] = [
-  {
-    id: 1,
-    title: 'Choose Your Income',
-    subtitle: 'With ABC Smart Monthly Income Plan',
-    tagline: '#LiveLifeOnYourTerms',
-    image: 'https://images.pexels.com/photos/2253879/pexels-photo-2253879.jpeg?auto=compress&cs=tinysrgb&w=600',
-    benefits: [
-      { icon: <Shield className="w-8 h-8" />, label: 'Life cover' },
-      { icon: <Calendar className="w-8 h-8" />, label: 'Income starts from next policy month / year' },
-      { icon: <HandCoins className="w-8 h-8" />, label: 'Flexible monthly or annual payouts' },
-      { icon: <CircleDollarSign className="w-8 h-8" />, label: 'Return of Total Premiums Paid* at Maturity' },
-    ],
-    disclaimer: '*Total Premiums Paid means total of all the Premiums received, excluding any extra Premium, any Rider Premium and taxes | T&C Apply.',
-  },
-  {
-    id: 2,
-    title: 'Secure Your Future',
-    subtitle: 'With ABC Term Protection Plan',
-    tagline: '#FamilyFirst',
-    image: 'https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=600',
-    benefits: [
-      { icon: <Shield className="w-8 h-8" />, label: 'Comprehensive life coverage' },
-      { icon: <Calendar className="w-8 h-8" />, label: 'Coverage up to age 99' },
-      { icon: <HandCoins className="w-8 h-8" />, label: 'Affordable premium options' },
-      { icon: <CircleDollarSign className="w-8 h-8" />, label: 'Instant claim settlement' },
-    ],
-    disclaimer: 'Subject to terms and conditions. Policy benefits depend on claims approval.',
-  },
-  {
-    id: 3,
-    title: 'Build Your Wealth',
-    subtitle: 'With ABC Investment Growth Plan',
-    tagline: '#GrowYourMoney',
-    image: 'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=600',
-    benefits: [
-      { icon: <Shield className="w-8 h-8" />, label: 'Investment-linked insurance' },
-      { icon: <Calendar className="w-8 h-8" />, label: 'Flexible fund choices' },
-      { icon: <HandCoins className="w-8 h-8" />, label: 'Tax-efficient growth' },
-      { icon: <CircleDollarSign className="w-8 h-8" />, label: 'Life protection included' },
-    ],
-    disclaimer: 'Investment returns subject to market performance. Policy terms apply.',
-  },
-  {
-    id: 4,
-    title: 'Plan Your Retirement',
-    subtitle: 'With ABC Retirement Savings Plan',
-    tagline: '#RetireInStyle',
-    image: 'https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=600',
-    benefits: [
-      { icon: <Shield className="w-8 h-8" />, label: 'Guaranteed income post-retirement' },
-      { icon: <Calendar className="w-8 h-8" />, label: 'Lifetime pension options' },
-      { icon: <HandCoins className="w-8 h-8" />, label: 'Flexible payout choices' },
-      { icon: <CircleDollarSign className="w-8 h-8" />, label: 'Tax benefits on contributions' },
-    ],
-    disclaimer: 'Retirement benefits and pension terms as per policy document.',
-  },
+const IMAGES = [
+  'https://images.pexels.com/photos/2253879/pexels-photo-2253879.jpeg?auto=compress&cs=tinysrgb&w=600',
+  'https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=600',
+  'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=600',
 ];
 
-export default function Hero() {
+const defaultBenefits = [
+  { icon: <Shield className="w-8 h-8" />, label: 'Personalized recommendation' },
+  { icon: <Calendar className="w-8 h-8" />, label: 'Based on your profile' },
+  { icon: <HandCoins className="w-8 h-8" />, label: 'Relevant to current events' },
+  { icon: <CircleDollarSign className="w-8 h-8" />, label: 'Tailored coverage options' },
+];
+
+function formatPolicyId(policyId: string): string {
+  return policyId
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+interface User {
+  user_id?: string;
+  id?: string;
+  [key: string]: unknown;
+}
+
+interface HeroProps {
+  username: string;
+}
+
+export default function Hero({ username }: HeroProps) {
+  const [user, setUser] = useState<User | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slides, setSlides] = useState<CarouselSlide[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchData = async () => {
+      const userRes = await fetch(`${API_BASE_URL}/user/${username}`);
+      const userData = await userRes.json();
+      const fetchedUser = userData.user ?? userData;
+      setUser(fetchedUser);
+
+      const userId = fetchedUser?.user_id ?? fetchedUser?.id;
+      const res = await fetch(`${API_BASE_URL}/recommend-policy/${username}`, { method: 'POST' });
+      const data = await res.json();
+      const parsed: PolicyRecommendation[] = JSON.parse(data.recommendation.content);
+      const recommendationSlides: CarouselSlide[] = parsed.map((rec, i) => ({
+        id: i + 1,
+        title: formatPolicyId(rec.policy_id),
+        subtitle: rec.reason,
+        tagline: rec.source,
+        image: IMAGES[i % IMAGES.length],
+        benefits: defaultBenefits,
+        disclaimer: 'Recommendation based on your profile and current events. Terms apply.',
+      }));
+      setSlides(recommendationSlides);
+      setLoading(false);
+    };
+    fetchData();
+  }, [username]);
+
+  useEffect(() => {
+    if (slides.length === 0) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -89,6 +98,14 @@ export default function Hero() {
   };
 
   const slide = slides[currentSlide];
+
+  if (loading) {
+    return (
+      <section className="bg-gradient-to-r from-blue-100 to-blue-50 min-h-[400px] flex items-center justify-center">
+        <p className="text-gray-600">Loading recommendations...</p>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-gradient-to-r from-blue-100 to-blue-50 relative overflow-hidden">
