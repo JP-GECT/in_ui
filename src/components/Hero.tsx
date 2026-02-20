@@ -52,7 +52,7 @@ export default function Hero({ username }: HeroProps) {
   useEffect(() => {
     const fetchData = async () => {
 
-      const res = await fetch(`${API_BASE_URL}/recommend-policy/${username}`, { method: 'POST' });
+      const res = await fetch(`http://34.93.15.139:8000/recommend-policy/${username}`, { method: 'POST' });
       const data = await res.json();
       const parsed: PolicyRecommendation[] = JSON.parse(data.recommendation.content);
       const recommendationSlides: CarouselSlide[] = parsed.map((rec, i) => ({
